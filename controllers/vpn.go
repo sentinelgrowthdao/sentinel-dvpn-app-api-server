@@ -46,11 +46,6 @@ func (vc VPNController) GetIPAddress(c *gin.Context) {
 		}
 	}
 
-	parts := strings.Split(ipAddr, ":")
-	if len(parts) > 0 {
-		ipAddr = strings.TrimSpace(parts[0])
-	}
-
 	var network models.Network
 	tx := vc.DB.First(&network, "network >> inet '"+ipAddr+"'")
 	if tx.Error != nil {
