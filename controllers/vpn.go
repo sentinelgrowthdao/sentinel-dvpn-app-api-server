@@ -54,7 +54,7 @@ func (vc VPNController) GetIPAddress(c *gin.Context) {
 	var network models.Network
 	tx := vc.DB.First(&network, "network >> inet '"+ipAddr+"'")
 	if tx.Error != nil {
-		middleware.RespondErr(c, middleware.APIErrorUnknown, "failed to find matching IP range")
+		middleware.RespondErr(c, middleware.APIErrorUnknown, "failed to find matching IP range for "+ipAddr+": "+tx.Error.Error())
 		return
 	}
 
