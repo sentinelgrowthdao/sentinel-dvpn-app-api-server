@@ -16,4 +16,5 @@ func (r Router) RegisterRoutes(router gin.IRouter) {
 	router.GET("/countries", r.VPNController.GetCountries)
 	router.GET("/countries/:country_id/cities", r.VPNController.GetCities)
 	router.GET("/countries/:country_id/cities/:city_id/servers", r.VPNController.GetServers)
+	router.POST("/countries/:country_id/cities/:city_id/servers", r.VPNController.GetServersByIds)
 }

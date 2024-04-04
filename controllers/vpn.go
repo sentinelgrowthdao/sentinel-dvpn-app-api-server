@@ -188,3 +188,27 @@ func (vc VPNController) GetServers(c *gin.Context) {
 
 	middleware.RespondOK(c, servers)
 }
+
+func (vc VPNController) GetServersByIds(c *gin.Context) {
+	type requestPayload struct {
+		Addresses []string `json:"addresses"`
+	}
+
+	var payload requestPayload
+	if err := c.BindJSON(&payload); err != nil {
+		middleware.RespondErr(c, middleware.APIErrorInvalidRequest, "invalid request payload: "+err.Error())
+		return
+	}
+
+	var servers []models.Server
+	query := vc.DB.Model(&models.Server{}).Where("address = ANY(?)", payload.Addresses)
+	tx := query.Find(&servers)
+	if tx.Error != nil {
+		reason := "failed to get servers: " + tx.Error.Error()
+		middleware.RespondErr(c, middleware.APIErrorUnknown, reason)
+		vc.Logger.Error(reason)
+		return
+	}
+
+	middleware.RespondOK(c, servers)
+}
