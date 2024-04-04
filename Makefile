@@ -1,4 +1,4 @@
-all: build_macos build_linux
+all: build_linux
 build_linux: bin/api-linux
 
 .PHONY: clean
