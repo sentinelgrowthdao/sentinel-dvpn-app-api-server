@@ -201,7 +201,7 @@ func (vc VPNController) GetServersByIds(c *gin.Context) {
 	}
 
 	var servers []models.Server
-	query := vc.DB.Model(&models.Server{}).Where("address = ANY(?)", payload.Addresses)
+	query := vc.DB.Model(&models.Server{}).Where("address IN ?", payload.Addresses)
 	tx := query.Find(&servers)
 	if tx.Error != nil {
 		reason := "failed to get servers: " + tx.Error.Error()

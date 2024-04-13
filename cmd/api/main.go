@@ -4,6 +4,7 @@ import (
 	"dvpn/controllers"
 	"dvpn/core"
 	planwizardAPI "dvpn/internal/planwizard"
+	sentinelAPI "dvpn/internal/sentinel"
 	"dvpn/jobs"
 	"dvpn/models"
 	"dvpn/routers"
@@ -28,6 +29,7 @@ func main() {
 		&models.City{},
 		&models.Server{},
 		&models.Network{},
+		&models.Wallet{},
 	)
 	if err != nil {
 		panic(err)
@@ -59,6 +61,23 @@ func main() {
 		PlanID:      planWizardPlanID,
 	}
 
+	gasBase, err := strconv.ParseInt(os.Getenv("SENTINEL_GAS_BASE"), 10, 64)
+	if err != nil {
+		panic(err)
+	}
+
+	sentinel := &sentinelAPI.Sentinel{
+		APIEndpoint:              os.Getenv("SENTINEL_API_ENDPOINT"),
+		RPCEndpoint:              os.Getenv("SENTINEL_RPC_ENDPOINT"),
+		ProviderPlanBlockchainID: os.Getenv("SENTINEL_PROVIDER_PLAN_ID"),
+		FeeGranterWalletAddress:  os.Getenv("SENTINEL_FEE_GRANTER_WALLET_ADDRESS"),
+		FeeGranterMnemonic:       os.Getenv("SENTINEL_FEE_GRANTER_WALLET_MNEMONIC"),
+		DefaultDenom:             os.Getenv("SENTINEL_DEFAULT_DENOM"),
+		ChainID:                  os.Getenv("SENTINEL_CHAIN_ID"),
+		GasPrice:                 os.Getenv("SENTINEL_GAS_PRICE"),
+		GasBase:                  gasBase,
+	}
+
 	router := routers.Router{
 		HealthController: &controllers.HealthController{
 			DB:     db,
@@ -67,6 +86,10 @@ func main() {
 		VPNController: &controllers.VPNController{
 			DB:     db,
 			Logger: logger.With("controller", "vpn"),
+		},
+		WalletController: &controllers.WalletController{
+			DB:     db,
+			Logger: logger.With("controller", "wallet"),
 		},
 	}
 
@@ -84,6 +107,19 @@ func main() {
 			fetchNodesFromPlanWizard.Run()
 		})
 		fetchNodesFromPlanWizardScheduler.StartAsync()
+
+		enrollWallets := jobs.EnrollWallets{
+			DB:       db,
+			Logger:   logger,
+			Sentinel: sentinel,
+		}
+
+		enrollWalletsScheduler := gocron.NewScheduler(time.UTC)
+		enrollWalletsScheduler.SetMaxConcurrentJobs(1, gocron.RescheduleMode)
+		enrollWalletsScheduler.Every(1).Seconds().Do(func() {
+			enrollWallets.Run()
+		})
+		enrollWalletsScheduler.StartAsync()
 	}
 
 	logger.Info("Registering routes...")
