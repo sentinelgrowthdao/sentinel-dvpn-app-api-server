@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"os"
 	"strings"
 )
 
@@ -25,7 +26,7 @@ func (wc WalletController) RegisterWallet(c *gin.Context) {
 		return
 	}
 
-	if payload.Address == "" || len(payload.Address) != 43 {
+	if payload.Address == "" || len(payload.Address) != 43 || payload.Address == os.Getenv("SENTINEL_FEE_GRANTER_WALLET_ADDRESS") {
 		middleware.RespondErr(c, middleware.APIErrorInvalidRequest, "invalid wallet address")
 		return
 	}
