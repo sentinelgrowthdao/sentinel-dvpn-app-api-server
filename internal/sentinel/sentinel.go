@@ -18,6 +18,9 @@ type Sentinel struct {
 	FeeGranterWalletAddress string
 	FeeGranterMnemonic      string
 
+	PurchaseWalletAddress string
+	PurchaseMnemonic      string
+
 	DefaultDenom string
 	ChainID      string
 	GasPrice     string
@@ -105,6 +108,73 @@ func (s Sentinel) GrantFeeToWallet(walletAddresses []string) error {
 	)
 
 	url := s.APIEndpoint + "/api/v1/feegrants" + args
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	var response *blockchainResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return err
+	}
+
+	if response.Success == false {
+		apiError := ""
+		if response.Error != nil {
+			apiError = " (" + response.Error.Message + ")"
+		}
+
+		return errors.New("success `false` returned from Sentinel API while granting fee to wallets" + apiError)
+	}
+
+	return nil
+}
+
+func (s Sentinel) SendTokensToWallet(walletAddresses []string, amounts []string) error {
+	type blockchainResponse struct {
+		Success bool                 `json:"success"`
+		Error   *SentinelError       `json:"error"`
+		Result  *SentinelTransaction `json:"result"`
+	}
+
+	type blockchainRequest struct {
+		Mnemonic       string   `json:"mnemonic"`
+		ToAccAddresses []string `json:"to_acc_addresses"`
+		Amounts        []string `json:"amounts"`
+	}
+
+	payload, err := json.Marshal(blockchainRequest{
+		Mnemonic:       s.PurchaseMnemonic,
+		ToAccAddresses: walletAddresses,
+		Amounts:        amounts,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	gas := s.GasBase * int64(len(walletAddresses)+1)
+
+	args := fmt.Sprintf(
+		"?rpc_address=%s&chain_id=%s&gas_prices=%s&gas=%d&simulate_and_execute=false",
+		s.RPCEndpoint,
+		s.ChainID,
+		s.GasPrice+s.DefaultDenom,
+		gas,
+	)
+
+	url := s.APIEndpoint + "/api/v1/balances" + args
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 

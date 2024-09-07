@@ -20,4 +20,6 @@ func (r Router) RegisterRoutes(router gin.IRouter) {
 	router.GET("/countries/:country_id/cities/:city_id/servers", r.VPNController.GetServers)
 	router.POST("/servers", r.VPNController.GetServersByIds)
 	router.POST("/wallet", r.WalletController.RegisterWallet)
+
+	router.POST("/rc-webhook", r.WalletController.HandleRevenueCatWebhook)
 }

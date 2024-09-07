@@ -72,6 +72,8 @@ func main() {
 		ProviderPlanBlockchainID: os.Getenv("SENTINEL_PROVIDER_PLAN_ID"),
 		FeeGranterWalletAddress:  os.Getenv("SENTINEL_FEE_GRANTER_WALLET_ADDRESS"),
 		FeeGranterMnemonic:       os.Getenv("SENTINEL_FEE_GRANTER_WALLET_MNEMONIC"),
+		PurchaseWalletAddress:    os.Getenv("SENTINEL_PURCHASE_WALLET_ADDRESS"),
+		PurchaseMnemonic:         os.Getenv("SENTINEL_PURCHASE_WALLET_MNEMONIC"),
 		DefaultDenom:             os.Getenv("SENTINEL_DEFAULT_DENOM"),
 		ChainID:                  os.Getenv("SENTINEL_CHAIN_ID"),
 		GasPrice:                 os.Getenv("SENTINEL_GAS_PRICE"),
@@ -120,6 +122,19 @@ func main() {
 			enrollWallets.Run()
 		})
 		enrollWalletsScheduler.StartAsync()
+
+		processPurchases := jobs.ProcessPurchases{
+			DB:       db,
+			Logger:   logger,
+			Sentinel: sentinel,
+		}
+
+		processPurchasesScheduler := gocron.NewScheduler(time.UTC)
+		processPurchasesScheduler.SetMaxConcurrentJobs(1, gocron.RescheduleMode)
+		processPurchasesScheduler.Every(1).Seconds().Do(func() {
+			processPurchases.Run()
+		})
+		processPurchasesScheduler.StartAsync()
 	}
 
 	logger.Info("Registering routes...")
