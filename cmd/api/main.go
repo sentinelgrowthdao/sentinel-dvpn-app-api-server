@@ -30,6 +30,7 @@ func main() {
 		&models.Server{},
 		&models.Network{},
 		&models.Wallet{},
+		&models.Purchase{},
 	)
 	if err != nil {
 		panic(err)
