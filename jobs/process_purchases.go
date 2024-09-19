@@ -23,6 +23,10 @@ func (job ProcessPurchases) Run() {
 		return
 	}
 
+	if len(purchases) == 0 {
+		return
+	}
+
 	chunks := job.formChunks(purchases, 10)
 	for _, chunk := range chunks {
 

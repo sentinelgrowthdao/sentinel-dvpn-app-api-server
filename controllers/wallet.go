@@ -99,7 +99,7 @@ func (wc WalletController) HandleRevenueCatWebhook(c *gin.Context) {
 	}
 
 	tx := wc.DB.Create(&purchase)
-	if tx.Error != nil {
+	if tx.Error == nil {
 		if strings.Contains(tx.Error.Error(), "duplicate key value violates unique constraint") == false {
 			reason := "failed to create purchase: " + tx.Error.Error()
 			middleware.RespondErr(c, middleware.APIErrorUnknown, reason)
